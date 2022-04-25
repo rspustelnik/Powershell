@@ -2,6 +2,12 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 
+$O=''
+$City=''
+$State=''
+$Country=''
+$Template=''
+
 function New-MessageBox($Message) {
     $Result = [System.Windows.MessageBox]::Show($Message)
     return $Result
@@ -88,7 +94,7 @@ function Add-OKClick($Form) {
             $sanx = ('"' + ($sanx -join '","') + '"') -replace ',""', ''
             #Get-Certificate (Create Get-Certificate Command Line populated with correct Data, Currently paste it as a string, can run if OKed by Infosec)
             if ($lstAction.selecteditem -eq 'Get-Certificate') {
-                $GCcertReq = "Get-Certificate -Template 'WebServerManualv1' -SubjectName 'CN=" + $tbCN.Text + ", OU=" + $tbOU.Text + ", O=Dillards Inc., L=Little Rock, S=Arkansas, C=US'  -DnsName " + $sanx + " -CertStoreLocation Cert:\LocalMachine\My -Url ldap: "
+                $GCcertReq = "Get-Certificate -Template $Template -SubjectName 'CN=" + $tbCN.Text + ", OU=" + $tbOU.Text + ", O=$O, L=$City, S=$State, C=$Country'  -DnsName " + $sanx + " -CertStoreLocation Cert:\LocalMachine\My -Url ldap: "
                 write-host $GCcertReq
                 #Close Form
                 $Form.Dispose()
@@ -103,7 +109,7 @@ function Add-OKClick($Form) {
                     #Base INF template
                     $inf = @"
 [NewRequest]
-Subject = "CN=$cn, O=Dillard's Inc., OU=$ou, L=Little Rock, ST=Arkansas, C=US"
+Subject = "CN=$cn, O=$O, OU=$ou, L=$City, ST=$State, C=$Country"
 KeyLength =  2048
 KeySpec = 1
 Exportable = True
@@ -155,8 +161,8 @@ function Add-CANCELClick($Form) {
 [int]$FormWidth = 420
 $FormName = 'Certificate Request Form'
 #this adds the extended functionality not approved by infoxsec at this point.
-#$MethodOptions = "Get-Certificate", "Certreq.exe", "OpenSSL"
-$MethodOptions = "Certreq.exe"
+$MethodOptions = "Get-Certificate", "Certreq.exe", "OpenSSL"
+#$MethodOptions = "Certreq.exe"
 $Position = 'CenterScreen'
 $Screen = [system.windows.forms.screen]::PrimaryScreen
 $Text = 'Certificate Request Form'
