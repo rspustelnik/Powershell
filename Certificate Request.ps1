@@ -15,12 +15,14 @@ function New-MessageBox($Message) {
 }
 function New-Form($Name, $Height, $Width, $Text, $Position) {
     $Form = New-Object System.Windows.Forms.Form
-    $Form.AutoSize = $true
-    $Form.Name = $Name
-    $Form.Size = New-Object System.Drawing.Size($Width, $Height)
-    $Form.StartPosition = $Position
-    $Form.Text = $Text
-    $Form.Topmost = $true
+    $Form | ForEach-Object{
+    $_.AutoSize = $true
+    $_.Name = $Name
+    $_.Size = New-Object System.Drawing.Size($Width, $Height)
+    $_.StartPosition = $Position
+    $_.Text = $Text
+    $_.Topmost = $true
+    }
     return $Form
 }
 function Show-Form($Form) {
@@ -28,29 +30,35 @@ function Show-Form($Form) {
 }
 function New-Label($Xpos, $Ypos, $Name, $Height, $Width, $Text, $Form) {
     $Label = New-Object System.Windows.Forms.Label
-    $Label.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $Label.Name = $Name
-    $Label.Size = New-Object System.Drawing.Size($Width, $Height)
-    $Label.Text = $Text
+    $Label | ForEach-Object{
+    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+    $_.Name = $Name
+    $_.Size = New-Object System.Drawing.Size($Width, $Height)
+    $_.Text = $Text
+    }
     $Form.Controls.Add($label)
     return $Label
 }
 function New-TextBox($Xpos, $Ypos, $Name, $Height, $Width, $Text, $Index, $Form) {
     $TextBox = New-Object System.Windows.Forms.TextBox
-    $TextBox.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $TextBox.Name = $Name
-    $TextBox.Size = New-Object System.Drawing.Size($Width, $Height)
-    $TextBox.TabIndex = $Index
-    $TextBox.Text = $Text
+    $TextBox |ForEach-Object{
+    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+    $_.Name = $Name
+    $_.Size = New-Object System.Drawing.Size($Width, $Height)
+    $_.TabIndex = $Index
+    $_.Text = $Text
+    }
     $Form.Controls.Add($TextBox)
     if ($Form.Controls.Name -contains $Name) { return $TextBox }else { $false }
 }
 function New-ListBox($Xpos, $Ypos, $Name, $Height, $Width, $Index, $OptArray, $Form) {
     $ListBox = New-Object System.Windows.Forms.ListBox
-    $ListBox.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $ListBox.Name = $Name
-    $ListBox.Size = New-Object System.Drawing.Size($Width, $Height)
-    $ListBox.TabIndex = $Index
+    $ListBox | ForEach-Object{
+    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+    $_.Name = $Name
+    $_.Size = New-Object System.Drawing.Size($Width, $Height)
+    $_.TabIndex = $Index
+    }
     foreach ($item in $OptArray) {
         $ListBox.Items.Add($item)
     }
@@ -59,11 +67,13 @@ function New-ListBox($Xpos, $Ypos, $Name, $Height, $Width, $Index, $OptArray, $F
 }
 function New-Button($Xpos, $Ypos, $Name, $Height, $Width, $Text, [switch]$OK, [switch]$Cancel, $Index, $Form) {
     $Button = New-Object System.Windows.Forms.Button
-    $Button.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $Button.Name = $Name
-    $Button.Size = New-Object System.Drawing.Size($Width, $Height)
-    $Button.TabIndex = $Index
-    $Button.Text = $Text
+    $Button | ForEach-Object{
+    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+    $_.Name = $Name
+    $_.Size = New-Object System.Drawing.Size($Width, $Height)
+    $_.TabIndex = $Index
+    $_.Text = $Text
+    }
     if ($OK) {
         $Button.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $form.AcceptButton = $Button
