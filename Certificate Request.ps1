@@ -2,11 +2,11 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 
-$O=''
-$City=''
-$State=''
-$Country=''
-$Template=''
+$O = ''
+$City = ''
+$State = ''
+$Country = ''
+$Template = ''
 
 function New-MessageBox($Message) {
     $Result = [System.Windows.MessageBox]::Show($Message)
@@ -15,13 +15,13 @@ function New-MessageBox($Message) {
 }
 function New-Form($Name, $Height, $Width, $Text, $Position) {
     $Form = New-Object System.Windows.Forms.Form
-    $Form | ForEach-Object{
-    $_.AutoSize = $true
-    $_.Name = $Name
-    $_.Size = New-Object System.Drawing.Size($Width, $Height)
-    $_.StartPosition = $Position
-    $_.Text = $Text
-    $_.Topmost = $true
+    $Form | ForEach-Object {
+        $_.AutoSize = $true
+        $_.Name = $Name
+        $_.Size = New-Object System.Drawing.Size($Width, $Height)
+        $_.StartPosition = $Position
+        $_.Text = $Text
+        $_.Topmost = $true
     }
     return $Form
 }
@@ -30,34 +30,34 @@ function Show-Form($Form) {
 }
 function New-Label($Xpos, $Ypos, $Name, $Height, $Width, $Text, $Form) {
     $Label = New-Object System.Windows.Forms.Label
-    $Label | ForEach-Object{
-    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $_.Name = $Name
-    $_.Size = New-Object System.Drawing.Size($Width, $Height)
-    $_.Text = $Text
+    $Label | ForEach-Object {
+        $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+        $_.Name = $Name
+        $_.Size = New-Object System.Drawing.Size($Width, $Height)
+        $_.Text = $Text
     }
     $Form.Controls.Add($label)
     return $Label
 }
 function New-TextBox($Xpos, $Ypos, $Name, $Height, $Width, $Text, $Index, $Form) {
     $TextBox = New-Object System.Windows.Forms.TextBox
-    $TextBox |ForEach-Object{
-    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $_.Name = $Name
-    $_.Size = New-Object System.Drawing.Size($Width, $Height)
-    $_.TabIndex = $Index
-    $_.Text = $Text
+    $TextBox | ForEach-Object {
+        $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+        $_.Name = $Name
+        $_.Size = New-Object System.Drawing.Size($Width, $Height)
+        $_.TabIndex = $Index
+        $_.Text = $Text
     }
     $Form.Controls.Add($TextBox)
     if ($Form.Controls.Name -contains $Name) { return $TextBox }else { $false }
 }
 function New-ListBox($Xpos, $Ypos, $Name, $Height, $Width, $Index, $OptArray, $Form) {
     $ListBox = New-Object System.Windows.Forms.ListBox
-    $ListBox | ForEach-Object{
-    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $_.Name = $Name
-    $_.Size = New-Object System.Drawing.Size($Width, $Height)
-    $_.TabIndex = $Index
+    $ListBox | ForEach-Object {
+        $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+        $_.Name = $Name
+        $_.Size = New-Object System.Drawing.Size($Width, $Height)
+        $_.TabIndex = $Index
     }
     foreach ($item in $OptArray) {
         $ListBox.Items.Add($item)
@@ -67,12 +67,12 @@ function New-ListBox($Xpos, $Ypos, $Name, $Height, $Width, $Index, $OptArray, $F
 }
 function New-Button($Xpos, $Ypos, $Name, $Height, $Width, $Text, [switch]$OK, [switch]$Cancel, $Index, $Form) {
     $Button = New-Object System.Windows.Forms.Button
-    $Button | ForEach-Object{
-    $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
-    $_.Name = $Name
-    $_.Size = New-Object System.Drawing.Size($Width, $Height)
-    $_.TabIndex = $Index
-    $_.Text = $Text
+    $Button | ForEach-Object {
+        $_.Location = New-Object System.Drawing.Point($Ypos, $Xpos)
+        $_.Name = $Name
+        $_.Size = New-Object System.Drawing.Size($Width, $Height)
+        $_.TabIndex = $Index
+        $_.Text = $Text
     }
     if ($OK) {
         $Button.DialogResult = [System.Windows.Forms.DialogResult]::OK
@@ -90,7 +90,7 @@ function Add-SANClick($Form) {
     $invis.name = ($invis.name -as [int]) + 1
     $invis.text = ($invis.text -as [int]) + 22
 
-    New-TextBox -Xpos ($invis.Text -as [int]) -Ypos 10 -Name "SanAddresss$($invis.name)" -Height 20 -Width 275 -Text "" -Index ($invis.AccessibleName -as [int]) -Form $Form 
+    New-TextBox -Xpos ($invis.Text) -Ypos 10 -Name "SanAddresss$($invis.name)" -Height 20 -Width 275 -Text "" -Index ($invis.AccessibleName) -Form $Form 
 }
 #OK Function (all the work happens here)
 function Add-OKClick($Form) {
@@ -102,22 +102,21 @@ function Add-OKClick($Form) {
         if (-not ([string]::IsNullOrEmpty($ou)) -and -not ([string]::IsNullOrEmpty($cn))) {
             $sanx = $form.controls | Where-Object { $_.name -like "SanAddress*" } | ForEach-Object { return $_.text } | Select-Object -Unique
             $sanx = ('"' + ($sanx -join '","') + '"') -replace ',""', ''
-            #Get-Certificate (Create Get-Certificate Command Line populated with correct Data, Currently paste it as a string, can run if OKed by Infosec)
-            if ($lstAction.selecteditem -eq 'Get-Certificate') {
-                $GCcertReq = "Get-Certificate -Template $Template -SubjectName 'CN=" + $tbCN.Text + ", OU=" + $tbOU.Text + ", O=$O, L=$City, S=$State, C=$Country'  -DnsName " + $sanx + " -CertStoreLocation Cert:\LocalMachine\My -Url ldap: "
-                write-host $GCcertReq
-                #Close Form
-                $Form.Dispose()
-            } 
-            #Certreq.exe (Created inf file, then runs certreq.exe generating a CSR, both INF and CSR are saved in Chosen Directory)
-            if ($lstAction.selecteditem -eq 'Certreq.exe') {
-                $infPath = New-Object System.Windows.Forms.SaveFileDialog
-                $infPath.filter = "inf files (*.inf)| *.inf"
-                $infPath.InitialDirectory = 'c:\'
-                $Result = $infPath.ShowDialog() 
-                if ($Result -ne 'Cancel') {
-                    #Base INF template
-                    $inf = @"
+            switch ($lstAction.selecteditem) {
+                'Get-Certificate' {
+                    $GCcertReq = "Get-Certificate -Template $Template -SubjectName 'CN=" + $tbCN.Text + ", OU=" + $tbOU.Text + ", O=$O, L=$City, S=$State, C=$Country'  -DnsName " + $sanx + " -CertStoreLocation Cert:\LocalMachine\My -Url ldap: "
+                    write-host $GCcertReq
+                    #Close Form
+                    $Form.Dispose()
+                }
+                'Certreq.exe' {
+                    $infPath = New-Object System.Windows.Forms.SaveFileDialog
+                    $infPath.filter = "inf files (*.inf)| *.inf"
+                    $infPath.InitialDirectory = 'c:\'
+                    $Result = $infPath.ShowDialog() 
+                    if ($Result -ne 'Cancel') {
+                        #Base INF template
+                        $inf = @"
 [NewRequest]
 Subject = "CN=$cn, O=$O, OU=$ou, L=$City, ST=$State, C=$Country"
 KeyLength =  2048
@@ -136,21 +135,27 @@ OID=1.3.6.1.5.5.7.3.1
 [Extensions]
 2.5.29.17 = "{text}"
 "@ 
-                    #Loop through SAN fields (dynamic, allowing any number of SAN entries)
-                    $sanx = $form.controls | Where-Object { $_.name -like "SanAddress*" }
-                    $inf += $sanx.text | ForEach-Object { "`n_continue_ = `"dns=" + $_ + "`"" -replace '_continue_ = "dns="', $null }
-                    $inf | Out-File -FilePath $infPath.FileName
-                    $inf
-                    #Command Line
-                    certreq.exe -new ($infPath.FileName ) ($infPath.FileName + ".csr")
-                    #Close Form
-                    $Form.Dispose()
+                        #Loop through SAN fields (dynamic, allowing any number of SAN entries)
+                        $sanx = $form.controls | Where-Object { $_.name -like "SanAddress*" }
+                        $inf += $sanx.text | ForEach-Object { "`n_continue_ = `"dns=" + $_ + "`"" -replace '_continue_ = "dns="', $null }
+                        $inf | Out-File -FilePath $infPath.FileName
+                        $inf
+                        #Command Line
+                        certreq.exe -new ($infPath.FileName ) ($infPath.FileName + ".csr")
+                        #Close Form
+                        $Form.Dispose()
+                    }
+                    
                 }
-                
+                'OpenSSL' {
+                    New-MessageBox -message 'OpenSSL Not Implimented Yet!'
+                }
             }
-            if ($lstAction.selecteditem -eq 'OpenSSL') {
-                New-MessageBox -message 'OpenSSL Not Implimented Yet!'
-            }
+            #Get-Certificate (Create Get-Certificate Command Line populated with correct Data, Currently paste it as a string, can run if OKed by Infosec)
+            #if ($lstAction.selecteditem -eq 'Get-Certificate') {} 
+            #Certreq.exe (Created inf file, then runs certreq.exe generating a CSR, both INF and CSR are saved in Chosen Directory)
+            #if ($lstAction.selecteditem -eq 'Certreq.exe') {}
+            #if ($lstAction.selecteditem -eq 'OpenSSL') {}
         }
         else {
             New-MessageBox -message 'CN and OU are required!'
