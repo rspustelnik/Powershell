@@ -1,5 +1,7 @@
 Add-Type -AssemblyName System.DirectoryServices.Protocols
 
+
+#Builds Ldap config file
 function Set-LdapConfig {   
     param(
         [Parameter(Mandatory = $false)][string]$username,
@@ -26,7 +28,8 @@ function Set-LdapConfig {
     
 }
 
-function set-LdapAttribute {
+#Set or Delete Ldap Attribute
+function Set-LdapAttribute {
     param(
         [Parameter(Mandatory = $true)][string]$AttrName,
         [Parameter(Mandatory = $true)][string]$AttrValue,
@@ -34,14 +37,18 @@ function set-LdapAttribute {
         [Parameter(Mandatory = $true)][object]$ldapUser
     )
     $settings = initLdap
-    #$ldapSearchFilter = "(&(objectClass=*)(uid=$($ldapuser.uid)))"
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800
-  
     $DirectoryRequest_value = New-Object "System.DirectoryServices.Protocols.DirectoryAttributeModification"
     $DirectoryRequest_value.Name = $AttrName
-    $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Replace 
+
+    switch ($AttrAction) {
+        add { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Add }
+        replace { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Replace }
+        delete { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete }
+    }
+    
     $DirectoryRequest_value.Add($AttrValue)
     $r = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
     $r.DistinguishedName = $ldapUser.DistinguishedName
@@ -52,7 +59,6 @@ function initLdap {
     $settings = Get-Content .\PSLdapConfig.json | ConvertFrom-Json
     $settings.password = ($settings.password | ConvertTo-SecureString )
     return $settings
-    
 }
 function Get-LdapUser {
     [CmdletBinding()]
@@ -81,11 +87,6 @@ function ConvertTo-Object {
     end { $object }
     
 }
-
-
-
-
-
 function Get-LdapObject {
     [CmdletBinding()]
     param(
