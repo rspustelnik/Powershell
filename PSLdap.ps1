@@ -30,10 +30,10 @@ function set-LdapAttribute {
     param(
         [Parameter(Mandatory = $true)][string]$AttrName,
         [Parameter(Mandatory = $true)][string]$AttrValue,
-        [Parameter(Mandatory = $true)][ValidateSet("add","replace","delete")][string]$AttrAction,
+        [Parameter(Mandatory = $true)][ValidateSet("add", "replace", "delete")][string]$AttrAction,
         [Parameter(Mandatory = $true)][object]$ldapUser
     )
-    $settings=initLdap
+    $settings = initLdap
     #$ldapSearchFilter = "(&(objectClass=*)(uid=$($ldapuser.uid)))"
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
