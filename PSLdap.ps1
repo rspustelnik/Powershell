@@ -1,6 +1,5 @@
 Add-Type -AssemblyName System.DirectoryServices.Protocols
 
-
 #Builds Ldap config file
 function Set-LdapConfig {   
     param(
@@ -31,9 +30,9 @@ function Set-LdapConfig {
 function Set-LdapAttribute {
     param(
         [Parameter(Mandatory = $true)][string]$AttrName,
-        [Parameter(Mandatory = $true)][string]$AttrValue,
+        [Parameter(Mandatory = $false)][string]$AttrValue,
         [Parameter(Mandatory = $true)][ValidateSet("add", "replace", "delete")][string]$AttrAction,
-        [Parameter(Mandatory = $true)][object]$ldapUser
+        [Parameter(Mandatory = $true)][object]$ldapObject
     )
     $settings = initLdap
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
@@ -43,14 +42,20 @@ function Set-LdapAttribute {
     $DirectoryRequest_value.Name = $AttrName
 
     switch ($AttrAction) {
-        add { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Add }
-        replace { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Replace }
-        delete { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete }
+        add {
+            $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Add
+        }
+        replace {
+            $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Replace
+        }
+        delete { 
+            $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete 
+        }
     }
     
-    $DirectoryRequest_value.Add($AttrValue) |out-null
+    
     $request = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
-    $request.DistinguishedName = $ldapUser.DistinguishedName
+    $request.DistinguishedName = $ldapObject.DistinguishedName
     $request.Modifications.Add($DirectoryRequest_value) | out-null
     return $ldapConnection.SendRequest($request)
 }
@@ -59,38 +64,39 @@ function initLdap {
     $settings.password = ($settings.password | ConvertTo-SecureString )
     return $settings
 }
-function Get-LdapUser {
+function Get-LdapObject {
     [CmdletBinding()]
     param (
         [Parameter()][string]$ldapSearchFilter,
-        [Parameter(Mandatory=$false)][string]$excludeProperty = ''
+        [Parameter(Mandatory = $false)][string[]]$excludeProperty = ''
     )
     $settings = initLdap
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800
-    return ($excludeProperty ? (Get-LdapObject -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -excludeProperty $excludeProperty):(Get-LdapObject -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree))
+    return ($excludeProperty ? (Get-LdapObjectRaw -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -excludeProperty $excludeProperty -Property '*', '+'):(Get-LdapObjectRaw -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -Property '*' , '+'))
     
 }
 function ConvertTo-Object {
     # Parameter help description
     param (
-        [Parameter(Mandatory = $false)][string]$excludeProperty,
-        [Parameter(Mandatory,ValueFromPipeline)][hashtable]$Hash
+        [Parameter(Mandatory = $false)][string[]]$excludeProperty,
+        [Parameter(Mandatory, ValueFromPipeline)][hashtable]$Hash
     )
 
     begin { $object = New-Object Object }
     
     process {
     
-        $_.GetEnumerator() | ForEach-Object { $_.name -eq $excludeProperty ? $null : (Add-Member -inputObject $object -memberType NoteProperty -name $_.Name -value $_.Value) }  
-    
-    }
-    
+        $_.GetEnumerator() | ForEach-Object { 
+            if ($excludeProperty) {
+                $excludeProperty.Contains($_.Name) ? $null : (Add-Member -inputObject $object -memberType NoteProperty -name $_.Name -value $_.Value)
+            }
+        } 
+    }  
     end { $object }
-    
 }
-function Get-LdapObject {
+function Get-LdapObjectRaw {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -110,7 +116,7 @@ function Get-LdapObject {
             Mandatory)]
         [String] $SearchBase,
 
-        [Parameter(Mandatory=$false)][String] $excludeProperty,
+        [Parameter(Mandatory = $false)][String[]] $excludeProperty,
 
         [Parameter(ParameterSetName = 'LdapFilter')]
         [System.DirectoryServices.Protocols.SearchScope] $Scope = [System.DirectoryServices.Protocols.SearchScope]::Subtree,
@@ -147,7 +153,8 @@ function Get-LdapObject {
             $request.DistinguishedName = $SearchBase
         }
 
-        if (-not $Property -or $Property -contains '*') {
+        #if (-not $Property -or $Property -contains '*') {
+        if (-not $Property ) {
         }
         else {
             foreach ($p in $Property) {
