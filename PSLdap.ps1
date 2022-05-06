@@ -27,7 +27,6 @@ function Set-LdapConfig {
     } | ConvertTo-Json | Set-Content .\PSLdapConfig.json
     
 }
-
 #Set or Delete Ldap Attribute
 function Set-LdapAttribute {
     param(
@@ -39,7 +38,7 @@ function Set-LdapAttribute {
     $settings = initLdap
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
-    $ldapConnection.Timeout = new-timespan -Seconds 1800
+    $ldapConnection.Timeout = new-timespan -Seconds 1800 
     $DirectoryRequest_value = New-Object "System.DirectoryServices.Protocols.DirectoryAttributeModification"
     $DirectoryRequest_value.Name = $AttrName
 
@@ -49,11 +48,11 @@ function Set-LdapAttribute {
         delete { $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete }
     }
     
-    $DirectoryRequest_value.Add($AttrValue)
-    $r = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
-    $r.DistinguishedName = $ldapUser.DistinguishedName
-    $r.Modifications.Add($DirectoryRequest_value)
-    return $ldapConnection.SendRequest($r)
+    $DirectoryRequest_value.Add($AttrValue) |out-null
+    $request = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
+    $request.DistinguishedName = $ldapUser.DistinguishedName
+    $request.Modifications.Add($DirectoryRequest_value) | out-null
+    return $ldapConnection.SendRequest($request)
 }
 function initLdap {
     $settings = Get-Content .\PSLdapConfig.json | ConvertFrom-Json
@@ -63,24 +62,28 @@ function initLdap {
 function Get-LdapUser {
     [CmdletBinding()]
     param (
-        [Parameter()]
-        [string]
-        $ldapSearchFilter
+        [Parameter()][string]$ldapSearchFilter,
+        [Parameter(Mandatory=$false)][string]$excludeProperty = ''
     )
     $settings = initLdap
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800
-    return Get-LdapObject -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree
+    return ($excludeProperty ? (Get-LdapObject -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -excludeProperty $excludeProperty):(Get-LdapObject -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree))
     
 }
 function ConvertTo-Object {
+    # Parameter help description
+    param (
+        [Parameter(Mandatory = $false)][string]$excludeProperty,
+        [Parameter(Mandatory,ValueFromPipeline)][hashtable]$Hash
+    )
 
     begin { $object = New-Object Object }
     
     process {
     
-        $_.GetEnumerator() | ForEach-Object { Add-Member -inputObject $object -memberType NoteProperty -name $_.Name -value $_.Value }  
+        $_.GetEnumerator() | ForEach-Object { $_.name -eq $excludeProperty ? $null : (Add-Member -inputObject $object -memberType NoteProperty -name $_.Name -value $_.Value) }  
     
     }
     
@@ -106,6 +109,8 @@ function Get-LdapObject {
         [Parameter(ParameterSetName = 'LdapFilter',
             Mandatory)]
         [String] $SearchBase,
+
+        [Parameter(Mandatory=$false)][String] $excludeProperty,
 
         [Parameter(ParameterSetName = 'LdapFilter')]
         [System.DirectoryServices.Protocols.SearchScope] $Scope = [System.DirectoryServices.Protocols.SearchScope]::Subtree,
@@ -172,7 +177,7 @@ function Get-LdapObject {
                         $hash[$a] = $e.Attributes[$a].GetValues($attrType) | Expand-Collection
                     }
 
-                    $outhash = $hash | ConvertTo-Object
+                    $outhash = $hash | ConvertTo-Object -excludeProperty $excludeProperty 
                 }
                 return $outhash
             }
@@ -181,10 +186,6 @@ function Get-LdapObject {
         $response
     }
 }
-
-
-
-
 function Expand-Collection {
     # Simple helper function to expand a collection into a PowerShell array.
     # The advantage to this is that if it's a collection with a single element,
