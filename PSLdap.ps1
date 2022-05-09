@@ -1,7 +1,4 @@
 Add-Type -AssemblyName System.DirectoryServices.Protocols
-
-
-
 #Builds Ldap config file
 function Set-LdapConfig {   
     param(
@@ -12,7 +9,9 @@ function Set-LdapConfig {
     )
     if ($username) { $password = (Get-Credential -UserName $username).Password | Convertfrom-SecureString }
     else {
-        $creds = Get-Credential -Message "DN/PW"
+        $User = read-host -Prompt "DN"
+        $password = ConvertTo-SecureString $(read-host -Prompt "PW") -AsPlainText -Force
+        $Creds = New-Object System.Management.Automation.PSCredential ($User, $password)
         $username = $creds.UserName
         $password = $creds.Password | ConvertFrom-SecureString 
     }
@@ -25,7 +24,7 @@ function Set-LdapConfig {
         server         = $server;
         port           = $port;
         ldapSearchBase = $ldapSearchBase
-    } | ConvertTo-Json | Set-Content .\PSLdapConfig.json
+    } | ConvertTo-Json | Set-Content $($env:USERPROFILE)\PSLdapConfig.json
     
 }
 #Set or Delete Ldap Attribute
@@ -46,7 +45,6 @@ function Set-LdapAttribute {
     $ldapConnection.SessionOptions.ProtocolVersion = 3
     $DirectoryRequest_value = New-Object "System.DirectoryServices.Protocols.DirectoryAttributeModification"
     $DirectoryRequest_value.Name = $AttrName
-
     switch ($AttrAction) {
         add {
             $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Add
@@ -58,14 +56,13 @@ function Set-LdapAttribute {
             $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete 
         }
     }
-            
     $request.DistinguishedName = $ldapObject.DistinguishedName
     $request.Controls.Add($control) | out-null
     $request.Modifications.Add($DirectoryRequest_value) | out-null
     return $ldapConnection.SendRequest($request)
 }
 function initLdap {
-    $settings = Get-Content .\PSLdapConfig.json | ConvertFrom-Json
+    $settings = Get-Content $($env:USERPROFILE)\PSLdapConfig.json | ConvertFrom-Json
     $settings.password = ($settings.password | ConvertTo-SecureString )
     return $settings
 }
@@ -109,7 +106,6 @@ function ConvertTo-Object {
         [Parameter(Mandatory = $false)][string[]]$excludeProperty,
         [Parameter(Mandatory, ValueFromPipeline)][hashtable]$Hash
     )
-
     begin { $object = New-Object Object }
     
     process {
@@ -121,7 +117,6 @@ function ConvertTo-Object {
                 name        = $_.Name
                 value       = $_.value
             }
-
             if ($excludeProperty) {
                 if (!$excludeProperty.Contains($_.Name)) { Add-Member @arguments }
             }
@@ -138,37 +133,28 @@ function Get-LdapObjectRaw {
         [Parameter(Mandatory)]
         [ValidateNotNull()]
         [System.DirectoryServices.Protocols.LdapConnection] $LdapConnection,
-
         [Parameter(ParameterSetName = 'DistinguishedName',
             Mandatory)]
         [String] $Identity,
-
         [Parameter(ParameterSetName = 'LdapFilter',
             Mandatory)]
         [Alias('Filter')]
         [String] $LdapFilter,
-
         [Parameter(ParameterSetName = 'LdapFilter',
             Mandatory)]
         [String] $SearchBase,
-
         [Parameter(Mandatory = $false)][String[]] $excludeProperty,
-
         [Parameter(ParameterSetName = 'LdapFilter')]
         [System.DirectoryServices.Protocols.SearchScope] $Scope = [System.DirectoryServices.Protocols.SearchScope]::Subtree,
-
         [Parameter()]
         [String[]] $Property,
-
         [Parameter()]
         [ValidateSet('String', 'ByteArray')]
         [String] $AttributeFormat = 'String',
-
         # Do not attempt to clean up the LDAP output - provide the output as-is
         [Parameter()]
         [Switch] $Raw
     )
-
     begin {
         if ($AttributeFormat -eq 'String') {
             $attrType = [string]
@@ -177,10 +163,8 @@ function Get-LdapObjectRaw {
             $attrType = [byte[]]
         }
     }
-
     process {
         $request = New-Object -TypeName System.DirectoryServices.Protocols.SearchRequest
-
         if ($PSCmdlet.ParameterSetName -eq 'DistinguishedName') {
             $request.DistinguishedName = $Identity
         }
@@ -188,20 +172,16 @@ function Get-LdapObjectRaw {
             $request.Filter = $LdapFilter
             $request.DistinguishedName = $SearchBase
         }
-
         if ($Property) {
             foreach ($p in $Property) {
                 [void] $request.Attributes.Add($p)
             }
         }
-
         $response = $LdapConnection.SendRequest($request)
-
         if (-not $response) {
             "No response was returned from the LDAP server."
             return
         }
-
         if ($response.ResultCode -eq 'Success') {
             if ($Raw) {
                 $($response.Entries)
@@ -216,18 +196,15 @@ function Get-LdapObjectRaw {
                     foreach ($a in $e.Attributes.Keys | Sort-Object) {
                         $hash[$a] = $e.Attributes[$a].GetValues($attrType) | Expand-Collection
                     }
-
                     $outhash = $hash | ConvertTo-Object -excludeProperty $excludeProperty 
                 }
                 return $outhash
             }
         }
-
-        $response
+        return $response
     }
 }
 function Expand-Collection {
-
     [CmdletBinding()]
     param(
         [Parameter(Mandatory,
@@ -237,7 +214,6 @@ function Expand-Collection {
         [ValidateNotNull()]
         [Object[]] $InputObject
     )
-
     process {
         foreach ($i in $InputObject) {
             $i | ForEach-Object { $_ }
@@ -249,7 +225,6 @@ function Unlock-LDAPUser ($LDAPObject) {
         write-host -ForegroundColor Green "pwdFailureTime : Success" 
     }
     else { write-host -ForegroundColor red "pwdFailureTime : Failed" }
-
     if (set-LdapAttribute -AttrName 'pwdAccountLockedTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) {
         write-host -ForegroundColor Green "pwdAccountLockedTime : Success"
     }
