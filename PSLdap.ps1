@@ -16,9 +16,9 @@ function Set-LdapConfig {
         $username = $creds.UserName
         $password = $creds.Password | ConvertFrom-SecureString 
     }
-    $server = $server ? $server : (Read-Host -Prompt "Ldap Server")
-    $port = $port ? $port : (Read-Host -Prompt "Ldap Port")
-    $ldapSearchBase = $ldapSearchBase ? $ldapSearchBase : (Read-Host -Prompt "Ldap Search Base")
+    $server = if (!$server) { Read-Host -Prompt "Ldap Server" }
+    $port = if (!$port) { Read-Host -Prompt "Ldap Port" }
+    $ldapSearchBase = if (!$ldapSearchBase) { Read-Host -Prompt "Ldap Search Base" }
     @{
         username       = $username;
         password       = $password;
@@ -37,6 +37,9 @@ function Set-LdapAttribute {
         [Parameter(Mandatory = $true)][object]$ldapObject
     )
     $settings = initLdap
+    [byte]$byte = "0x1"
+    $control = New-Object 'System.DirectoryServices.Protocols.DirectoryControl' -ArgumentList '1.3.18.0.2.10.15', $byte, $true, $true
+    $request = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800 
@@ -55,9 +58,7 @@ function Set-LdapAttribute {
             $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete 
         }
     }
-    [byte]$byte = "0x1"
-    $control = New-Object 'System.DirectoryServices.Protocols.DirectoryControl' -ArgumentList '1.3.18.0.2.10.15', $byte, $true, $true
-    $request = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
+            
     $request.DistinguishedName = $ldapObject.DistinguishedName
     $request.Controls.Add($control) | out-null
     $request.Modifications.Add($DirectoryRequest_value) | out-null
@@ -78,7 +79,7 @@ function Get-LdapObject {
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800
-    $excludeProperty ? (
+    if ($excludeProperty) {
         $Arguments = @{
             LdapConnection  = $ldapConnection 
             LdapFilter      = $ldapSearchFilter 
@@ -86,14 +87,17 @@ function Get-LdapObject {
             Scope           = 'Subtree' 
             excludeProperty = $excludeProperty 
             Property        = '*', '+'
-        }):(
+        }
+    }
+    else {
         $Arguments = @{
             LdapConnection = $ldapConnection 
             LdapFilter     = $ldapSearchFilter 
             SearchBase     = $settings.ldapSearchBase 
             Scope          = 'Subtree' 
             Property       = '*', '+'
-        })
+        }
+    }
     
     return Get-LdapObjectRaw @Arguments
     
@@ -119,7 +123,7 @@ function ConvertTo-Object {
             }
 
             if ($excludeProperty) {
-                $excludeProperty.Contains($_.Name) ? $null : (Add-Member @arguments)
+                if (!$excludeProperty.Contains($_.Name)) { Add-Member @arguments }
             }
             else {
                 Add-Member @arguments
@@ -185,10 +189,7 @@ function Get-LdapObjectRaw {
             $request.DistinguishedName = $SearchBase
         }
 
-        #if (-not $Property -or $Property -contains '*') {
-        if (-not $Property ) {
-        }
-        else {
+        if ($Property) {
             foreach ($p in $Property) {
                 [void] $request.Attributes.Add($p)
             }
@@ -226,9 +227,7 @@ function Get-LdapObjectRaw {
     }
 }
 function Expand-Collection {
-    # Simple helper function to expand a collection into a PowerShell array.
-    # The advantage to this is that if it's a collection with a single element,
-    # PowerShell will automatically parse that as a single entry.
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory,
@@ -241,11 +240,20 @@ function Expand-Collection {
 
     process {
         foreach ($i in $InputObject) {
-            ForEach-Object -InputObject $i -Process { $_ }
+            $i | ForEach-Object { $_ }
         }
     }
 }
 function Unlock-LDAPUser ($LDAPObject) {
-    (set-LdapAttribute -AttrName 'pwdFailureTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) ? (write-host -ForegroundColor Green "pwdFailureTime : Success"):(write-host -ForegroundColor red "pwdFailureTime : Failed")
-    (set-LdapAttribute -AttrName 'pwdAccountLockedTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) ? (write-host -ForegroundColor Green "pwdAccountLockedTime : Success"):(write-host -ForegroundColor red "pwdAccountLockedTime : Failed")
+    if (set-LdapAttribute -AttrName 'pwdFailureTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) { 
+        write-host -ForegroundColor Green "pwdFailureTime : Success" 
+    }
+    else { write-host -ForegroundColor red "pwdFailureTime : Failed" }
+
+    if (set-LdapAttribute -AttrName 'pwdAccountLockedTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) {
+        write-host -ForegroundColor Green "pwdAccountLockedTime : Success"
+    }
+    else {
+        write-host -ForegroundColor red "pwdAccountLockedTime : Failed"
+    }
 }
