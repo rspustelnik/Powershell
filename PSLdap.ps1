@@ -1,5 +1,7 @@
 Add-Type -AssemblyName System.DirectoryServices.Protocols
 
+
+
 #Builds Ldap config file
 function Set-LdapConfig {   
     param(
@@ -38,6 +40,7 @@ function Set-LdapAttribute {
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800 
+    $ldapConnection.SessionOptions.ProtocolVersion = 3
     $DirectoryRequest_value = New-Object "System.DirectoryServices.Protocols.DirectoryAttributeModification"
     $DirectoryRequest_value.Name = $AttrName
 
@@ -52,10 +55,11 @@ function Set-LdapAttribute {
             $DirectoryRequest_value.Operation = [System.DirectoryServices.Protocols.DirectoryAttributeOperation]::Delete 
         }
     }
-    
-    
+    [byte]$byte = "0x1"
+    $control = New-Object 'System.DirectoryServices.Protocols.DirectoryControl' -ArgumentList '1.3.18.0.2.10.15', $byte, $true, $true
     $request = New-Object -TypeName System.DirectoryServices.Protocols.ModifyRequest
     $request.DistinguishedName = $ldapObject.DistinguishedName
+    $request.Controls.Add($control) | out-null
     $request.Modifications.Add($DirectoryRequest_value) | out-null
     return $ldapConnection.SendRequest($request)
 }
@@ -74,7 +78,25 @@ function Get-LdapObject {
     $ldapCredentials = New-Object System.Net.NetworkCredential($settings.username, $settings.password)
     $ldapConnection = New-Object System.DirectoryServices.Protocols.LDAPConnection("$($settings.server):$($settings.port)", $ldapCredentials, "Basic")
     $ldapConnection.Timeout = new-timespan -Seconds 1800
-    return ($excludeProperty ? (Get-LdapObjectRaw -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -excludeProperty $excludeProperty -Property '*', '+'):(Get-LdapObjectRaw -LdapConnection $ldapConnection -LdapFilter $ldapSearchFilter -SearchBase $settings.ldapSearchBase -Scope Subtree -Property '*' , '+'))
+    $excludeProperty ? (
+        $Arguments = @{
+            LdapConnection  = $ldapConnection 
+            LdapFilter      = $ldapSearchFilter 
+            SearchBase      = $settings.ldapSearchBase 
+            Scope           = 'Subtree' 
+            excludeProperty = $excludeProperty 
+            Property        = '*', '+'
+        }):(
+        $Arguments = @{
+            LdapConnection = $ldapConnection 
+            LdapFilter     = $ldapSearchFilter 
+            SearchBase     = $settings.ldapSearchBase 
+            Scope          = 'Subtree' 
+            Property       = '*', '+'
+        })
+    
+    return Get-LdapObjectRaw @Arguments
+    
     
 }
 function ConvertTo-Object {
@@ -89,8 +111,18 @@ function ConvertTo-Object {
     process {
     
         $_.GetEnumerator() | ForEach-Object { 
+            $arguments = @{
+                inputObject = $object
+                memberType  = 'NoteProperty'
+                name        = $_.Name
+                value       = $_.value
+            }
+
             if ($excludeProperty) {
-                $excludeProperty.Contains($_.Name) ? $null : (Add-Member -inputObject $object -memberType NoteProperty -name $_.Name -value $_.Value)
+                $excludeProperty.Contains($_.Name) ? $null : (Add-Member @arguments)
+            }
+            else {
+                Add-Member @arguments
             }
         } 
     }  
@@ -212,4 +244,8 @@ function Expand-Collection {
             ForEach-Object -InputObject $i -Process { $_ }
         }
     }
+}
+function Unlock-LDAPUser ($LDAPObject) {
+    (set-LdapAttribute -AttrName 'pwdFailureTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) ? (write-host -ForegroundColor Green "pwdFailureTime : Success"):(write-host -ForegroundColor red "pwdFailureTime : Failed")
+    (set-LdapAttribute -AttrName 'pwdAccountLockedTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) ? (write-host -ForegroundColor Green "pwdAccountLockedTime : Success"):(write-host -ForegroundColor red "pwdAccountLockedTime : Failed")
 }
