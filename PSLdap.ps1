@@ -24,7 +24,7 @@ function Set-LdapConfig {
         server         = $server;
         port           = $port;
         ldapSearchBase = $ldapSearchBase
-    } | ConvertTo-Json | Set-Content $($env:USERPROFILE)\PSLdapConfig.json
+    } | ConvertTo-Json | Set-Content "$($env:USERPROFILE)\PSLdapConfig.json"
     
 }
 #Set or Delete Ldap Attribute
@@ -62,7 +62,7 @@ function Set-LdapAttribute {
     return $ldapConnection.SendRequest($request)
 }
 function initLdap {
-    $settings = Get-Content $($env:USERPROFILE)\PSLdapConfig.json | ConvertFrom-Json
+    $settings = Get-Content "$($env:USERPROFILE)\PSLdapConfig.json" | ConvertFrom-Json
     $settings.password = ($settings.password | ConvertTo-SecureString )
     return $settings
 }
