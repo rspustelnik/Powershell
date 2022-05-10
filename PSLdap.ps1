@@ -232,3 +232,22 @@ function Unlock-LDAPUser ($LDAPObject) {
         write-host -ForegroundColor red "pwdAccountLockedTime : Failed"
     }
 }
+
+function Get-LdapUser {
+    param (
+        [Parameter(Mandatory)][String] $UserID,    
+        [Parameter(Mandatory = $false)][String[]] $excludeProperty        
+    )
+    if ($excludeProperty) {
+        $options = @{
+            ldapSearchFilter = "(&(objectClass=*)(uid=$UserID))"
+            excludeProperty  = $excludeProperty 
+        }
+    } 
+    else { 
+        $options = @{
+            ldapSearchFilter = "(&(objectClass=*)(uid=$UserID))"
+        }
+    }
+        return Get-LdapObject @options
+    }
