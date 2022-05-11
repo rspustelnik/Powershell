@@ -1,5 +1,8 @@
 Add-Type -AssemblyName System.DirectoryServices.Protocols
+Set-Alias -Name Get-LdapConfig -Value initLdap
 #Builds Ldap config file
+
+#* Set-LdapConfig configures your LDAP connection information and saves it in your local User Profile
 function Set-LdapConfig {   
     param(
         [Parameter(Mandatory = $false)][string]$username,
@@ -27,7 +30,8 @@ function Set-LdapConfig {
     } | ConvertTo-Json | Set-Content "$($env:USERPROFILE)\PSLdapConfig.json"
     
 }
-#Set or Delete Ldap Attribute
+ 
+#* Set-LdapAttribute Set or Delete Ldap any Attribute 
 function Set-LdapAttribute {
     param(
         [Parameter(Mandatory = $true)][string]$AttrName,
@@ -61,11 +65,15 @@ function Set-LdapAttribute {
     $request.Modifications.Add($DirectoryRequest_value) | out-null
     return $ldapConnection.SendRequest($request)
 }
+
+#* initLdap is a Procedural function called by other commands. Also Aliased as get-ldapconfig it outputs the current saved configuration
 function initLdap {
     $settings = Get-Content "$($env:USERPROFILE)\PSLdapConfig.json" | ConvertFrom-Json
     $settings.password = ($settings.password | ConvertTo-SecureString )
     return $settings
 }
+
+#* Get-LdapObject will retrieve any object from the LDAP repo via the search filter.
 function Get-LdapObject {
     [CmdletBinding()]
     param (
@@ -100,6 +108,7 @@ function Get-LdapObject {
     
     
 }
+#* ConvertTo-Object converts the Hashtable returned from the LDAP server from Byte[] to an Object
 function ConvertTo-Object {
     # Parameter help description
     param (
@@ -127,6 +136,8 @@ function ConvertTo-Object {
     }  
     end { $object }
 }
+
+#* Get-LdapObjectRaw is the Background Function used to retrieve unformated Data from the Ldap Server
 function Get-LdapObjectRaw {
     [CmdletBinding()]
     param(
@@ -204,6 +215,8 @@ function Get-LdapObjectRaw {
         return $response
     }
 }
+
+#* Expand-Colection is a recursive background function used to process objects with sub-objects
 function Expand-Collection {
     [CmdletBinding()]
     param(
@@ -220,7 +233,10 @@ function Expand-Collection {
         }
     }
 }
-function Unlock-LDAPUser ($LDAPObject) {
+
+#* Unlock-LdapUser deletes the pwdFailureTime and pwdAccountLockedTime values from a user Record
+function Unlock-LDAPUser ($LDAPUser) {
+    if ($LDAPUser.GetType() -eq 'object') { $LDAPObject = $LDAPUser } else { $LDAPObject = Get-LdapUser -UserID $LDAPUser }
     if (set-LdapAttribute -AttrName 'pwdFailureTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) { 
         write-host -ForegroundColor Green "pwdFailureTime : Success" 
     }
@@ -233,6 +249,7 @@ function Unlock-LDAPUser ($LDAPObject) {
     }
 }
 
+#* Get-LdapUser gets a user record via their username as a string
 function Get-LdapUser {
     param (
         [Parameter(Mandatory)][String] $UserID,    
@@ -249,5 +266,5 @@ function Get-LdapUser {
             ldapSearchFilter = "(&(objectClass=*)(uid=$UserID))"
         }
     }
-        return Get-LdapObject @options
-    }
+    return Get-LdapObject @options
+}
