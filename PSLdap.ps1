@@ -236,7 +236,7 @@ function Expand-Collection {
 
 #* Unlock-LdapUser deletes the pwdFailureTime and pwdAccountLockedTime values from a user Record
 function Unlock-LDAPUser ($LDAPUser) {
-    if ($LDAPUser.GetType() -eq 'object') { $LDAPObject = $LDAPUser } else { $LDAPObject = Get-LdapUser -UserID $LDAPUser }
+    if ($LDAPUser.GetType().name -eq 'Object') { $LDAPObject = $LDAPUser } else { $LDAPObject = Get-LdapUser -UserID $LDAPUser }
     if (set-LdapAttribute -AttrName 'pwdFailureTime' -AttrValue '' -ldapObject $LDAPObject -AttrAction delete ) { 
         write-host -ForegroundColor Green "pwdFailureTime : Success" 
     }
