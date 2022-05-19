@@ -200,25 +200,18 @@ function Add-CANCELClick($Form)
 
 #Main
 #Variables
-[int]$FormHeight = 250
-[int]$FormWidth = 420
-$FormName = 'Certificate Request Form'
-#this adds the extended functionality not approved by infoxsec at this point.
 $MethodOptions = 'Get-Certificate', 'Certreq.exe', 'OpenSSL'
-#$MethodOptions = "Certreq.exe"
-$Position = 'CenterScreen'
 $Screen = [system.windows.forms.screen]::PrimaryScreen
-$Text = 'Certificate Request Form'
+
 
 #Create Main Form
 $parms = @{
-    Name     = $FormName 
-    Height   = $FormHeight 
-    Width    = $FormWidth 
-    Text     = $Text 
-    Position = $Position
+    Name     = 'Certificate Request Form'
+    Height   = 250 
+    Width    = 420 
+    Text     = 'Certificate Request Form' 
+    Position = 'CenterScreen'
 }
-#$frmMain = New-Form -Name $FormName -Height $FormHeight -Width $FormWidth -Text $Text -Position $Position
 $frmMain = New-Form @parms
 $frmMain.MaximumSize = New-Object System.Drawing.Size($FormWidth, $screen.bounds.height)
 
