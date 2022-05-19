@@ -181,11 +181,6 @@ OID=1.3.6.1.5.5.7.3.1
                     New-MessageBox -message 'OpenSSL Not Implimented Yet!'
                 }
             }
-            #Get-Certificate (Create Get-Certificate Command Line populated with correct Data, Currently paste it as a string, can run if OKed by Infosec)
-            #if ($lstAction.selecteditem -eq 'Get-Certificate') {} 
-            #Certreq.exe (Created inf file, then runs certreq.exe generating a CSR, both INF and CSR are saved in Chosen Directory)
-            #if ($lstAction.selecteditem -eq 'Certreq.exe') {}
-            #if ($lstAction.selecteditem -eq 'OpenSSL') {}
         }
         else
         {
