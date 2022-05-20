@@ -203,15 +203,18 @@ function Add-CANCELClick($Form)
 $MethodOptions = 'Get-Certificate', 'Certreq.exe', 'OpenSSL'
 $Screen = [system.windows.forms.screen]::PrimaryScreen
 
+[int]$FormHeight = 250
+[int]$FormWidth = 420
 
 #Create Main Form
 $parms = @{
     Name     = 'Certificate Request Form'
-    Height   = 250 
-    Width    = 420 
+    Height   = $FormHeight
+    Width    = $FormWidth
     Text     = 'Certificate Request Form' 
     Position = 'CenterScreen'
 }
+
 $frmMain = New-Form @parms
 $frmMain.MaximumSize = New-Object System.Drawing.Size($FormWidth, $screen.bounds.height)
 
