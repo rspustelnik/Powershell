@@ -8,7 +8,7 @@ GET https://gitlab.dillards.com/api/v4/projects/7/jobs HTTP/1.1
 PRIVATE-TOKEN: {{token}}
 
 ### - Get Project ###
-GET https://gitlab.dillards.com/api/v4/projects/7 HTTP/1.1
+GET https://gitlab.dillards.com/api/v4/projects/ HTTP/1.1
 PRIVATE-TOKEN: {{token}}
 
 ### - Get Pipeline ###
