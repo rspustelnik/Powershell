@@ -5,4 +5,4 @@ $header = @{
 $uri = 'https://gitlab.dillards.com/api/v4/projects/'
 $projects = Invoke-WebRequest -Headers $header -Uri $uri
 
-$projects.Content
+$projects.Content | ConvertFrom-Json
