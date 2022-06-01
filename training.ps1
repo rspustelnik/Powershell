@@ -3,6 +3,6 @@ $header = @{
     'PRIVATE-TOKEN' = $token
 }
 $uri = 'https://gitlab.dillards.com/api/v4/projects/'
-$projects = Invoke-WebRequest -Headers $header -Uri $uri
+$projects = (Invoke-WebRequest -Headers $header -Uri $uri).Content | ConvertFrom-Json
 
-$projects.Content | ConvertFrom-Json
+$projects | select id, name
