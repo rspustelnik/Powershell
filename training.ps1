@@ -1,12 +1,4 @@
-$token = 'glpat-2ReyRiZF4YDuC6F2wASm'
-$header = @{
-    'PRIVATE-TOKEN' = $token
-}
-$uri = 'https://gitlab.dillards.com/api/v4/groups/'
-$projects = (Invoke-WebRequest -Headers $header -Uri $uri).Content | ConvertFrom-Json
-
-($projects | select id, name) | % {
-    $uri = 'https://gitlab.dillards.com/api/v4/projects/' + $_.id
-    
-    ((Invoke-WebRequest -Headers $header -Uri $uri).Content | ConvertFrom-Json).runners_token
+(Get-ADGroupMember vendors).samaccountname | % {
+    $vendorid = $_
+    Get-ADGroupMember globalprotectallowed | ?($_.samaccountname -eq $vendorid)
 }
