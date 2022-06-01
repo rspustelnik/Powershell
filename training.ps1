@@ -5,4 +5,8 @@ $header = @{
 $uri = 'https://gitlab.dillards.com/api/v4/projects/'
 $projects = (Invoke-WebRequest -Headers $header -Uri $uri).Content | ConvertFrom-Json
 
-$projects | select id, name
+($projects | select id, name) | % {
+    $uri = 'https://gitlab.dillards.com/api/v4/projects/' + $_.id
+    
+    ((Invoke-WebRequest -Headers $header -Uri $uri).Content | ConvertFrom-Json).runners_token
+}
