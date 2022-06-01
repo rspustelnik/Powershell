@@ -1,14 +1,22 @@
-@token=pJChuA1JhqKTD4NyFko1
-### - Find all projects - ####
-GET https://gitlab.dillards.com/api/v4/projects?per_page=5 HTTP/1.1
+@token=glpat-2ReyRiZF4YDuC6F2wASm
+
+### - List groups - ###
+GET https://gitlab.dillards.com/api/v4/groups/ HTTP/1.1
 PRIVATE-TOKEN: {{token}}
 
-### - List jobs - ###
-GET https://gitlab.dillards.com/api/v4/projects/7/jobs HTTP/1.1
+
+### - List runners - ###
+GET https://gitlab.dillards.com/api/v4/runners/ HTTP/1.1
 PRIVATE-TOKEN: {{token}}
+
+
+### - Get Projects ###
+GET https://gitlab.dillards.com/api/v4/projects/ HTTP/1.1
+PRIVATE-TOKEN: {{token}}
+
 
 ### - Get Project ###
-GET https://gitlab.dillards.com/api/v4/projects/ HTTP/1.1
+GET https://gitlab.dillards.com/api/v4/projects/1580 HTTP/1.1
 PRIVATE-TOKEN: {{token}}
 
 ### - Get Pipeline ###
