@@ -27,6 +27,11 @@ PRIVATE-TOKEN: {{token}}
 GET https://gitlab.dillards.com/api/v4/projects/700/jobs?scope[]=manual HTTP/1.1
 PRIVATE-TOKEN: {{token}}
 
+###
+
+GET https://gitlab.dillards.com/api/v4/users?state=active HTTP/1.1
+PRIVATE-TOKEN: {{token}}
+
 ### - Play a job
 GET https://gitlab.dillards.com/api/v4/projects/7/jobs/557/play HTTP/1.1
 PRIVATE-TOKEN: {{token}}
